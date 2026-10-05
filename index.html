@@ -1,0 +1,1321 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portal Simulasi Ujian Akademik</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300;1,400&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f4f7f6; /* Soft grayish-green background for less eye strain */
+            color: #2d3748;
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+        h1, h2, h3, h4, h5, h6, .brand-logo {
+            font-family: 'Merriweather', serif; /* Academic serif feel for headings */
+            color: #1a202c;
+        }
+        
+        .card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+            padding: 2.5rem;
+        }
+
+        /* Form & Inputs */
+        .file-drop-area {
+            border: 2px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 3rem 2rem;
+            text-align: center;
+            background-color: #f8fafc;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .file-drop-area:hover, .file-drop-area.drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+
+        /* Custom Options (Radio & Checkbox) */
+        .option-container {
+            display: flex;
+            align-items: flex-start;
+            padding: 1rem 1.25rem;
+            margin-bottom: 0.75rem;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: #ffffff;
+        }
+        .option-container:hover:not(.disabled) {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
+        }
+        
+        /* Hide default inputs but keep them accessible */
+        .option-input {
+            position: absolute;
+            opacity: 0;
+            cursor: pointer;
+            height: 0;
+            width: 0;
+        }
+
+        /* Custom styling for checked state */
+        .option-input:checked ~ .option-content {
+            font-weight: 600;
+        }
+        .option-container.selected {
+            background-color: #e2e8f0;
+            border-color: #64748b;
+        }
+
+        /* Review Mode Styles */
+        .option-container.correct-answer {
+            background-color: #dcfce7 !important;
+            border-color: #22c55e !important;
+        }
+        .option-container.correct-answer .option-text {
+            color: #166534;
+        }
+        .option-container.wrong-answer {
+            background-color: #fee2e2 !important;
+            border-color: #ef4444 !important;
+        }
+        .option-container.wrong-answer .option-text {
+            color: #991b1b;
+        }
+        
+        .explanation-box {
+            background-color: #f0f9ff;
+            border-left: 4px solid #0ea5e9;
+            padding: 1.25rem;
+            margin-top: 1.5rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #2c3e50; /* Dark academic blue */
+            color: white;
+            border: 1px solid #2c3e50;
+        }
+        .btn-primary:hover { background-color: #1a252f; }
+        .btn-primary:disabled {
+            background-color: #94a3b8;
+            border-color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .btn-outline {
+            background-color: transparent;
+            color: #2c3e50;
+            border: 1px solid #cbd5e1;
+        }
+        .btn-outline:hover {
+            background-color: #f1f5f9;
+            border-color: #94a3b8;
+        }
+
+        /* Float Button & Prompt Menu */
+        .floating-btn {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background-color: #2c3e50;
+            color: white;
+            border-radius: 50%;
+            width: 3.5rem;
+            height: 3.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            cursor: pointer;
+            transition: transform 0.2s, background-color 0.2s;
+            z-index: 50;
+        }
+        .floating-btn:hover {
+            transform: scale(1.05);
+            background-color: #1a252f;
+        }
+        .prompt-menu {
+            position: fixed;
+            bottom: 6rem;
+            right: 2rem;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+            width: 380px;
+            padding: 1.5rem;
+            z-index: 49;
+            transform: translateY(20px);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .prompt-menu.active {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: #1f2937;
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 9999px;
+            font-size: 0.875rem;
+            font-weight: 500;
+            opacity: 0;
+            transition: all 0.3s ease;
+            z-index: 60;
+        }
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        /* Progress Bar & Timer */
+        .progress-track {
+            width: 100%;
+            background-color: #e2e8f0;
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #3b82f6; /* Calming blue for progress */
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .hide { display: none !important; }
+        
+        main { flex-grow: 1; }
+
+        /* Ragu-Ragu Styles */
+        .flagged-btn {
+            background-color: #fef08a !important; /* Yellow-200 */
+            border-color: #eab308 !important; /* Yellow-500 */
+            color: #854d0e !important; /* Yellow-800 */
+        }
+        .flagged-btn.ring-2 {
+            ring-color: #eab308 !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Prompt Menu -->
+    <div id="prompt-menu" class="prompt-menu">
+        <h3 class="font-bold text-gray-800 mb-2">Buat Soal dengan AI</h3>
+        <p class="text-sm text-gray-600 mb-4">Salin prompt di bawah ini dan gunakan di ChatGPT, Gemini, atau Claude untuk membuat bank soal baru.</p>
+        
+        <div class="mb-3">
+            <label class="block text-xs font-medium text-gray-700 mb-1">Topik (Opsional)</label>
+            <input type="text" id="topic-input" class="w-full text-sm border border-gray-300 rounded px-2 py-1 focus:outline-none focus:border-blue-500" placeholder="Misal: Sejarah Indonesia, Biologi...">
+        </div>
+
+        <div class="relative group">
+            <textarea id="prompt-text" readonly class="w-full h-72 text-xs bg-gray-50 border border-gray-200 rounded p-2 text-gray-700 resize-none font-mono">Buatkan saya 10 soal tentang [TOPIK] (gunakan campuran tipe soal: pilihan_ganda, pilgan_kompleks, dan benar_salah). Berikan output HANYA format JSON murni, tanpa teks awal/akhir, tanpa markdown (```). Wajib ikuti skema ini:
+[
+  {
+    "id": 1,
+    "tipe": "pilihan_ganda",
+    "pertanyaan": "Teks soal...",
+    "opsi": ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
+    "jawaban_benar": "Opsi A",
+    "penjelasan": "Alasannya..."
+  },
+  {
+    "id": 2,
+    "tipe": "pilgan_kompleks",
+    "pertanyaan": "Teks soal (jawaban >1)...",
+    "opsi": ["Opsi A", "Opsi B", "Opsi C", "Opsi D"],
+    "jawaban_benar": ["Opsi A", "Opsi C"],
+    "penjelasan": "Alasannya..."
+  },
+  {
+    "id": 3,
+    "tipe": "benar_salah",
+    "pertanyaan": "Teks pernyataan...",
+    "opsi": ["Benar", "Salah"],
+    "jawaban_benar": "Benar",
+    "penjelasan": "Alasannya..."
+  }
+]</textarea>
+            <div class="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <button id="copy-prompt-btn" class="bg-gray-800 text-white p-1.5 rounded shadow hover:bg-gray-700" title="Salin ke Clipboard">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"></path></svg>
+                </button>
+            </div>
+        </div>
+        <div class="mt-3 flex justify-between items-center">
+            <span class="text-xs text-gray-500">*Ganti [TOPIK] secara manual jika kosong.</span>
+        </div>
+    </div>
+
+    <!-- Floating Button -->
+    <button id="floating-btn" class="floating-btn" title="Rekomendasi Prompt AI">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>
+    </button>
+    
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Disalin ke clipboard!</div>
+
+    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-10">
+        <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+            <div class="brand-logo text-xl font-bold tracking-tight text-gray-800">
+                Latihan Akademik
+            </div>
+            <div id="header-status" class="text-sm font-medium text-gray-500">
+                Silakan Unggah Bank Soal
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-4xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        
+        <section id="upload-screen" class="card max-w-2xl mx-auto mt-8">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold mb-2">Persiapan Simulasi Ujian</h1>
+                <p class="text-gray-600">Unggah file konfigurasi soal berformat JSON untuk memulai sesi latihan Anda.</p>
+            </div>
+            
+            <div class="file-drop-area" id="drop-area">
+                <input type="file" id="file-input" accept=".json" class="hidden">
+                <label for="file-input" class="cursor-pointer flex flex-col items-center justify-center w-full h-full">
+                    <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                    </svg>
+                    <span class="text-lg font-medium text-gray-700">Pilih file JSON bank soal</span>
+                    <span class="text-sm text-gray-500 mt-1">atau tarik dan lepas file ke area ini</span>
+                </label>
+            </div>
+
+            <div id="upload-error" class="mt-4 p-3 bg-red-50 border border-red-200 text-red-700 rounded text-sm hide">
+                <!-- Error message injected here -->
+            </div>
+
+            <div id="upload-success" class="mt-8 text-center hide">
+                <div class="inline-flex items-center justify-center p-2 bg-green-100 text-green-700 rounded-full mb-3">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                </div>
+                <h3 class="text-lg font-medium text-gray-900 mb-1" id="file-info-title">File Berhasil Dimuat</h3>
+                <p class="text-gray-600 mb-6" id="file-info-desc">Total 0 soal siap untuk dikerjakan.</p>
+                <button id="start-btn" class="btn btn-primary w-full sm:w-auto">Mulai Mengerjakan</button>
+            </div>
+            
+            <div class="mt-10 border-t pt-6">
+                <h4 class="text-sm font-semibold text-gray-700 mb-2">Panduan Struktur JSON (Schema)</h4>
+                <div class="bg-gray-50 rounded p-4 text-xs font-mono text-gray-600 overflow-x-auto border border-gray-200">
+<pre>[
+  {
+    "id": 1,
+    "tipe": "pilihan_ganda", // pilihan_ganda, pilgan_kompleks, benar_salah
+    "pertanyaan": "Teks pertanyaan di sini...",
+    "opsi": ["Opsi A", "Opsi B", "Opsi C"],
+    "jawaban_benar": "Opsi A", // Gunakan Array ["A", "B"] untuk pilgan_kompleks
+    "penjelasan": "Penjelasan mengapa jawabannya A..."
+  }
+]</pre>
+                </div>
+            </div>
+        </section>
+
+        <section id="quiz-screen" class="hide">
+            <div class="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-3 rounded-md border border-gray-200 shadow-sm">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800" id="quiz-title">Simulasi Latihan</h2>
+                    <p class="text-sm text-gray-500 mt-0.5" id="question-tracker">Soal 1 dari 10</p>
+                </div>
+                
+                <!-- Timer Display -->
+                <div id="timer-container" class="flex items-center space-x-2 bg-gray-50 px-4 py-2 rounded-md border border-gray-200 hide">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    <span id="time-display" class="font-mono text-lg font-bold text-gray-700">00:00:00</span>
+                </div>
+
+                <div class="w-full sm:w-1/3 mt-2 sm:mt-0">
+                    <div class="flex justify-between text-xs text-gray-500 mb-1">
+                        <span>Progres Penyelesaian</span>
+                        <span id="progress-text">0%</span>
+                    </div>
+                    <div class="progress-track">
+                        <div id="progress-bar" class="progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col lg:flex-row gap-6">
+                <!-- Bagian Utama: Pertanyaan & Kontrol Bawah -->
+                <div class="flex-1 flex flex-col">
+                    <div class="card relative min-h-[400px] flex flex-col">
+                        <!-- Question Header Badge -->
+                        <div class="mb-4 inline-block px-3 py-1 bg-gray-100 border border-gray-200 text-xs font-semibold text-gray-600 rounded uppercase tracking-wide" id="question-type-badge">
+                            Tipe Soal
+                        </div>
+
+                        <!-- Question Content -->
+                        <div class="text-lg md:text-xl font-medium text-gray-900 mb-8 leading-relaxed" id="question-text">
+                            Memuat pertanyaan...
+                        </div>
+
+                        <!-- Options -->
+                        <div id="options-container" class="space-y-1 flex-grow">
+                            <!-- Options injected via JS -->
+                        </div>
+
+                        <!-- Explanation Box (Hidden by default, shown in review) -->
+                        <div id="explanation-container" class="explanation-box hide mt-6">
+                            <h4 class="font-bold text-sm text-sky-800 mb-2 uppercase tracking-wide">Pembahasan</h4>
+                            <p id="explanation-text" class="text-sky-900 text-sm md:text-base leading-relaxed"></p>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Controls -->
+                    <div class="flex flex-col sm:flex-row justify-between items-center mt-6 gap-4">
+                        <button id="prev-btn" class="btn btn-outline w-full sm:w-auto" disabled>
+                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path></svg>
+                            Sebelumnya <span class="hidden md:inline ml-1 text-xs opacity-50">(←)</span>
+                        </button>
+                        
+                        <label id="flag-container" class="flex items-center cursor-pointer select-none space-x-2 w-full sm:w-auto justify-center">
+                            <div class="relative">
+                                <input type="checkbox" id="flag-checkbox" class="sr-only">
+                                <div class="block bg-gray-200 w-10 h-6 rounded-full transition-colors duration-300"></div>
+                                <div class="dot absolute left-1 top-1 bg-white w-4 h-4 rounded-full transition-transform duration-300"></div>
+                            </div>
+                            <span class="text-sm font-medium text-gray-700">Ragu-Ragu</span>
+                        </label>
+                        <style>
+                            input:checked ~ .block { background-color: #eab308; }
+                            input:checked ~ .dot { transform: translateX(100%); }
+                        </style>
+
+                        <button id="next-btn" class="btn btn-primary w-full sm:w-auto">
+                            Selanjutnya <span class="hidden md:inline ml-1 text-xs opacity-50">(→)</span>
+                            <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Panel Samping: Navigasi Grid Angka -->
+                <div class="w-full lg:w-72 flex-shrink-0">
+                    <div class="card p-5 lg:sticky lg:top-20">
+                        <h3 class="font-bold text-gray-800 mb-4 text-sm uppercase tracking-wider border-b border-gray-200 pb-2">Navigasi Soal</h3>
+                        <div id="question-nav-grid" class="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-5 gap-2">
+                            <!-- Nav buttons inserted here via JS -->
+                        </div>
+                        
+                        <!-- Legenda Mode Mengerjakan -->
+                        <div class="mt-6 space-y-2 text-xs text-gray-600" id="nav-legend">
+                            <div class="flex items-center"><div class="w-3 h-3 rounded bg-blue-600 mr-2"></div> Sudah Dijawab</div>
+                            <div class="flex items-center"><div class="w-3 h-3 rounded bg-yellow-200 border border-yellow-500 mr-2"></div> Ragu-Ragu</div>
+                            <div class="flex items-center"><div class="w-3 h-3 rounded border border-gray-300 bg-white mr-2"></div> Belum Dijawab</div>
+                        </div>
+                        
+                        <!-- Legenda Mode Ulasan -->
+                        <div class="mt-6 space-y-2 text-xs text-gray-600 hide" id="nav-legend-review">
+                            <div class="flex items-center"><div class="w-3 h-3 rounded bg-green-500 mr-2"></div> Benar</div>
+                            <div class="flex items-center"><div class="w-3 h-3 rounded bg-red-500 mr-2"></div> Salah</div>
+                            <div class="flex items-center"><div class="w-3 h-3 rounded bg-gray-200 mr-2"></div> Tidak Dijawab</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="result-screen" class="hide max-w-3xl mx-auto">
+            <div class="card text-center py-10 border-t-4 border-t-[#2c3e50]">
+                <h2 class="text-3xl font-bold mb-2">Simulasi Selesai</h2>
+                <p class="text-gray-600 mb-8">Berikut adalah rangkuman performa akademis Anda.</p>
+                
+                <div class="flex flex-col md:flex-row justify-center items-center gap-8 mb-10">
+                    <!-- Score Circle -->
+                    <div class="relative w-48 h-48">
+                        <!-- SVG Circle for progress -->
+                        <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                            <circle cx="50" cy="50" r="45" fill="none" stroke="#e2e8f0" stroke-width="10"></circle>
+                            <circle id="score-circle-path" cx="50" cy="50" r="45" fill="none" stroke="#2c3e50" stroke-width="10" stroke-dasharray="283" stroke-dashoffset="283" class="transition-all duration-1000 ease-out"></circle>
+                        </svg>
+                        <div class="absolute inset-0 flex flex-col items-center justify-center">
+                            <span id="score-percentage" class="text-4xl font-bold text-gray-800">0%</span>
+                            <span id="score-fraction" class="text-sm text-gray-500 font-medium mt-1">0 / 0 Benar</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Stats Breakdown -->
+                    <div class="text-left bg-gray-50 p-6 rounded-lg border border-gray-200 w-full md:w-auto min-w-[250px]">
+                        <h4 class="font-bold text-gray-800 border-b pb-2 mb-4">Statistik Jawaban</h4>
+                        <ul class="space-y-3 text-sm">
+                            <li class="flex justify-between items-center">
+                                <span class="text-gray-600">Total Soal:</span>
+                                <span class="font-bold text-gray-900" id="stat-total">0</span>
+                            </li>
+                            <li class="flex justify-between items-center text-green-700">
+                                <span>Jawaban Benar:</span>
+                                <span class="font-bold" id="stat-correct">0</span>
+                            </li>
+                            <li class="flex justify-between items-center text-red-700">
+                                <span>Jawaban Salah:</span>
+                                <span class="font-bold" id="stat-wrong">0</span>
+                            </li>
+                            <li class="flex justify-between items-center text-gray-500">
+                                <span>Tidak Dijawab / Sebagian Benar:</span>
+                                <span class="font-bold" id="stat-unanswered">0</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row justify-center gap-4">
+                    <button id="review-btn" class="btn btn-outline w-full sm:w-auto">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Ulas Pembahasan
+                    </button>
+                    <button id="restart-btn" class="btn btn-primary w-full sm:w-auto">
+                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        Ulangi Latihan
+                    </button>
+                    <button id="new-file-btn" class="btn btn-outline w-full sm:w-auto">Unggah Soal Baru</button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto py-6">
+        <div class="max-w-4xl mx-auto px-4 text-center text-sm text-gray-500">
+            <p>Sistem Evaluasi Akademik &bull; Memproses data secara lokal di peramban Anda.</p>
+        </div>
+    </footer>
+
+    <script>
+        // --- State Management ---
+        let bankSoalRaw = []; // Original imported data
+        let configWaktu = null; // Stored timer config
+        let bankSoal = []; // Active shuffled data
+        let currentQuestionIndex = 0;
+        let userAnswers = []; // Akan menyimpan jawaban user per indeks soal
+        let flaggedQuestions = []; // Array of booleans marking ragged questions
+        let isReviewMode = false;
+        let evaluationResults = []; // Array of boolean/strings marking correct/wrong per question
+        
+        let timerInterval;
+        let remainingSeconds = 0;
+        const STORAGE_KEY = 'academic_test_progress';
+
+        // --- DOM Elements ---
+        const uploadScreen = document.getElementById('upload-screen');
+        const quizScreen = document.getElementById('quiz-screen');
+        const resultScreen = document.getElementById('result-screen');
+        
+        const fileInput = document.getElementById('file-input');
+        const dropArea = document.getElementById('drop-area');
+        const uploadError = document.getElementById('upload-error');
+        const uploadSuccess = document.getElementById('upload-success');
+        const fileInfoDesc = document.getElementById('file-info-desc');
+        const headerStatus = document.getElementById('header-status');
+        
+        const questionTracker = document.getElementById('question-tracker');
+        const progressText = document.getElementById('progress-text');
+        const progressBar = document.getElementById('progress-bar');
+        const questionTypeBadge = document.getElementById('question-type-badge');
+        const questionText = document.getElementById('question-text');
+        const optionsContainer = document.getElementById('options-container');
+        const explanationContainer = document.getElementById('explanation-container');
+        const explanationText = document.getElementById('explanation-text');
+        
+        const questionNavGrid = document.getElementById('question-nav-grid');
+        const navLegend = document.getElementById('nav-legend');
+        const navLegendReview = document.getElementById('nav-legend-review');
+        
+        const startBtn = document.getElementById('start-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const prevBtn = document.getElementById('prev-btn');
+        const flagContainer = document.getElementById('flag-container');
+        const flagCheckbox = document.getElementById('flag-checkbox');
+        
+        const timerContainer = document.getElementById('timer-container');
+        const timeDisplay = document.getElementById('time-display');
+
+        const reviewBtn = document.getElementById('review-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const newFileBtn = document.getElementById('new-file-btn');
+
+        // --- Drag and Drop File Logic ---
+        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, preventDefaults, false);
+        });
+
+        function preventDefaults(e) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+
+        ['dragenter', 'dragover'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.add('drag-over'), false);
+        });
+
+        ['dragleave', 'drop'].forEach(eventName => {
+            dropArea.addEventListener(eventName, () => dropArea.classList.remove('drag-over'), false);
+        });
+
+        dropArea.addEventListener('drop', handleDrop, false);
+
+        function handleDrop(e) {
+            const dt = e.dataTransfer;
+            const files = dt.files;
+            if(files.length > 0) processFile(files[0]);
+        }
+
+        fileInput.addEventListener('change', function(e) {
+            if(e.target.files.length > 0) processFile(e.target.files[0]);
+        });
+
+        function processFile(file) {
+            uploadError.classList.add('hide');
+            uploadSuccess.classList.add('hide');
+
+            if (file.type !== "application/json" && !file.name.endsWith('.json')) {
+                showError("Mohon unggah file dengan format .json yang valid.");
+                return;
+            }
+
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const parsedData = JSON.parse(e.target.result);
+                    
+                    // Handle format with config (object) vs just array
+                    let soalData = [];
+                    if (Array.isArray(parsedData)) {
+                        soalData = parsedData;
+                    } else if (parsedData.soal && Array.isArray(parsedData.soal)) {
+                        soalData = parsedData.soal;
+                        if (parsedData.waktu && typeof parsedData.waktu === 'number') {
+                            configWaktu = parsedData.waktu; // in minutes
+                        }
+                    } else {
+                        throw new Error("Format JSON harus berupa Array soal atau Object dengan properti 'soal'.");
+                    }
+
+                    if (soalData.length === 0) {
+                        throw new Error("Daftar soal tidak boleh kosong.");
+                    }
+
+                    // Basic structure validation on first item
+                    const firstItem = soalData[0];
+                    if (!firstItem.hasOwnProperty('tipe') || !firstItem.hasOwnProperty('pertanyaan') || !firstItem.hasOwnProperty('jawaban_benar')) {
+                        throw new Error("Struktur JSON tidak sesuai skema yang diwajibkan (harus ada tipe, pertanyaan, jawaban_benar).");
+                    }
+
+                    bankSoalRaw = soalData;
+                    
+                    // Attempt to restore progress if same file size/questions (heuristic)
+                    const savedProgress = loadProgress();
+                    if (savedProgress && savedProgress.totalSoal === bankSoalRaw.length) {
+                         if (confirm("Ditemukan sesi pengerjaan yang belum selesai. Apakah Anda ingin melanjutkannya?")) {
+                             restoreGameState(savedProgress);
+                             startGame(true);
+                             return;
+                         }
+                    }
+
+                    // Fresh start setup happens on startBtn click
+                    fileInfoDesc.textContent = `Total ${bankSoalRaw.length} soal siap untuk dikerjakan.${configWaktu ? ` Waktu: ${configWaktu} menit.` : ''}`;
+                    uploadSuccess.classList.remove('hide');
+                    dropArea.classList.add('hide');
+
+                } catch (error) {
+                    showError("Gagal membaca file: " + error.message);
+                    console.error("JSON Parse Error:", error);
+                }
+            };
+
+            reader.readAsText(file);
+        }
+
+        function showError(msg) {
+            uploadError.textContent = msg;
+            uploadError.classList.remove('hide');
+        }
+
+        // Helper to shuffle array (Fisher-Yates)
+        function shuffleArray(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        function initNewGame() {
+            // Shuffle questions and options
+            bankSoal = shuffleArray(bankSoalRaw).map(soal => {
+                const newSoal = { ...soal };
+                if (newSoal.opsi && newSoal.tipe !== 'benar_salah') { // Don't shuffle True/False usually
+                    newSoal.opsi = shuffleArray(newSoal.opsi);
+                }
+                return newSoal;
+            });
+
+            currentQuestionIndex = 0;
+            userAnswers = bankSoal.map(soal => {
+                return soal.tipe === 'pilgan_kompleks' ? [] : null;
+            });
+            flaggedQuestions = new Array(bankSoal.length).fill(false);
+            evaluationResults = new Array(bankSoal.length).fill(null);
+            isReviewMode = false;
+            
+            if (configWaktu) {
+                remainingSeconds = configWaktu * 60;
+            } else {
+                remainingSeconds = 0;
+            }
+            saveProgress();
+        }
+
+        startBtn.addEventListener('click', () => {
+            initNewGame();
+            startGame(false);
+        });
+
+        function startGame(isRestored) {
+            uploadScreen.classList.add('hide');
+            resultScreen.classList.add('hide');
+            quizScreen.classList.remove('hide');
+            headerStatus.textContent = "Sesi Latihan Berlangsung";
+            
+            navLegend.classList.remove('hide');
+            navLegendReview.classList.add('hide');
+            
+            // Setup Timer
+            if (remainingSeconds > 0) {
+                timerContainer.classList.remove('hide');
+                updateTimerDisplay();
+                startTimer();
+            } else {
+                timerContainer.classList.add('hide');
+            }
+
+            renderQuestionGrid();
+            loadQuestion();
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                if (isReviewMode) {
+                    clearInterval(timerInterval);
+                    return;
+                }
+                
+                remainingSeconds--;
+                updateTimerDisplay();
+                saveProgress(); // Save periodically
+
+                if (remainingSeconds <= 0) {
+                    clearInterval(timerInterval);
+                    alert("Waktu Habis! Mengumpulkan jawaban secara otomatis.");
+                    calculateScore();
+                }
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            if(remainingSeconds < 0) remainingSeconds = 0;
+            const h = Math.floor(remainingSeconds / 3600);
+            const m = Math.floor((remainingSeconds % 3600) / 60);
+            const s = remainingSeconds % 60;
+            
+            let display = "";
+            if (h > 0) display += String(h).padStart(2, '0') + ":";
+            display += String(m).padStart(2, '0') + ":" + String(s).padStart(2, '0');
+            
+            timeDisplay.textContent = display;
+
+            // Warning color
+            if (remainingSeconds < 60) {
+                timeDisplay.classList.add('text-red-600');
+                timeDisplay.classList.remove('text-gray-700');
+            } else {
+                timeDisplay.classList.remove('text-red-600');
+                timeDisplay.classList.add('text-gray-700');
+            }
+        }
+
+        function saveProgress() {
+            if (isReviewMode) return;
+            const state = {
+                totalSoal: bankSoal.length,
+                bankSoal: bankSoal,
+                currentQuestionIndex: currentQuestionIndex,
+                userAnswers: userAnswers,
+                flaggedQuestions: flaggedQuestions,
+                remainingSeconds: remainingSeconds
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        }
+
+        function loadProgress() {
+            try {
+                const data = localStorage.getItem(STORAGE_KEY);
+                return data ? JSON.parse(data) : null;
+            } catch (e) {
+                return null;
+            }
+        }
+
+        function clearProgress() {
+            localStorage.removeItem(STORAGE_KEY);
+        }
+
+        function restoreGameState(state) {
+            bankSoal = state.bankSoal;
+            currentQuestionIndex = state.currentQuestionIndex;
+            userAnswers = state.userAnswers;
+            flaggedQuestions = state.flaggedQuestions || new Array(bankSoal.length).fill(false);
+            remainingSeconds = state.remainingSeconds;
+            isReviewMode = false;
+            evaluationResults = new Array(bankSoal.length).fill(null);
+        }
+
+        function renderQuestionGrid() {
+            questionNavGrid.innerHTML = '';
+            bankSoal.forEach((_, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'w-full aspect-square flex items-center justify-center rounded border text-sm font-semibold transition-all duration-200';
+                btn.id = `nav-btn-${index}`;
+                btn.textContent = index + 1;
+                btn.addEventListener('click', () => {
+                    currentQuestionIndex = index;
+                    loadQuestion();
+                });
+                questionNavGrid.appendChild(btn);
+            });
+            updateQuestionGrid();
+        }
+
+        function updateQuestionGrid() {
+            bankSoal.forEach((soal, index) => {
+                const btn = document.getElementById(`nav-btn-${index}`);
+                if (!btn) return;
+
+                // Reset base classes
+                btn.className = 'w-full aspect-square flex items-center justify-center rounded border text-sm font-semibold transition-all duration-200 cursor-pointer';
+                
+                const ans = userAnswers[index];
+                const isFlagged = flaggedQuestions[index];
+                let isAnswered = false;
+                
+                if (soal.tipe === 'pilgan_kompleks') {
+                    isAnswered = Array.isArray(ans) && ans.length > 0;
+                } else {
+                    isAnswered = ans !== null && ans !== undefined;
+                }
+
+                if (isReviewMode) {
+                    const status = evaluationResults[index];
+                    if (status === 'correct') {
+                        btn.classList.add('bg-green-500', 'border-green-600', 'text-white');
+                    } else if (status === 'wrong') {
+                        btn.classList.add('bg-red-500', 'border-red-600', 'text-white');
+                    } else {
+                        btn.classList.add('bg-gray-200', 'border-gray-300', 'text-gray-500');
+                    }
+                } else {
+                    if (isFlagged) {
+                        // Ragu-ragu takes precedence in coloring if answering
+                        btn.classList.add('flagged-btn');
+                    } else if (isAnswered) {
+                        btn.classList.add('bg-blue-600', 'border-blue-700', 'text-white');
+                    } else {
+                        btn.classList.add('bg-white', 'border-gray-300', 'text-gray-700', 'hover:bg-gray-50');
+                    }
+                }
+
+                // Current question highlight
+                if (index === currentQuestionIndex) {
+                    btn.classList.add('ring-2', 'ring-offset-1', isReviewMode ? 'ring-gray-800' : 'ring-blue-500');
+                }
+            });
+        }
+
+        function loadQuestion() {
+            const soal = bankSoal[currentQuestionIndex];
+            
+            // Update Headers & Progress
+            questionTracker.textContent = `Soal ${currentQuestionIndex + 1} dari ${bankSoal.length}`;
+            const progress = ((currentQuestionIndex) / bankSoal.length) * 100;
+            progressBar.style.width = `${progress}%`;
+            progressText.textContent = `${Math.round(progress)}%`;
+
+            // Set Tipe Badge
+            let tipeLabel = "";
+            switch(soal.tipe) {
+                case 'pilihan_ganda': tipeLabel = "Pilihan Ganda"; break;
+                case 'pilgan_kompleks': tipeLabel = "Pilihan Ganda Kompleks"; break;
+                case 'benar_salah': tipeLabel = "Benar / Salah"; break;
+                default: tipeLabel = "Soal";
+            }
+            if(soal.tipe === 'pilgan_kompleks') {
+                 tipeLabel += " (Pilih lebih dari satu)";
+                 questionTypeBadge.classList.replace('bg-gray-100', 'bg-amber-100');
+                 questionTypeBadge.classList.replace('text-gray-600', 'text-amber-800');
+                 questionTypeBadge.classList.replace('border-gray-200', 'border-amber-200');
+            } else {
+                 questionTypeBadge.className = "mb-4 inline-block px-3 py-1 bg-gray-100 border border-gray-200 text-xs font-semibold text-gray-600 rounded uppercase tracking-wide";
+            }
+            questionTypeBadge.textContent = tipeLabel;
+
+            questionText.textContent = soal.pertanyaan;
+            optionsContainer.innerHTML = '';
+
+            // Render Options
+            const inputType = soal.tipe === 'pilgan_kompleks' ? 'checkbox' : 'radio';
+            const currentAnswer = userAnswers[currentQuestionIndex];
+
+            soal.opsi.forEach((optText, index) => {
+                const optId = `opt-${index}`;
+                
+                // Determine if checked
+                let isChecked = false;
+                if (soal.tipe === 'pilgan_kompleks') {
+                    isChecked = currentAnswer.includes(optText);
+                } else {
+                    isChecked = currentAnswer === optText;
+                }
+
+                // Create Elements
+                const label = document.createElement('label');
+                label.className = `option-container ${isChecked ? 'selected' : ''} ${isReviewMode ? 'disabled cursor-default' : ''}`;
+                label.htmlFor = optId;
+
+                const input = document.createElement('input');
+                input.type = inputType;
+                input.name = `question-${currentQuestionIndex}`;
+                input.id = optId;
+                input.value = optText;
+                input.className = 'option-input';
+                input.checked = isChecked;
+                if(isReviewMode) input.disabled = true;
+
+                // Handle changes for non-review mode
+                if (!isReviewMode) {
+                    input.addEventListener('change', (e) => {
+                        handleAnswerSelection(e.target.value, e.target.checked, soal.tipe);
+                        updateOptionStyles();
+                    });
+                }
+
+                const marker = document.createElement('div');
+                // Styling the marker (radio circle or checkbox square)
+                marker.className = `mt-1 mr-4 w-5 h-5 flex-shrink-0 border-2 rounded${inputType === 'radio' ? '-full' : ''} border-gray-400 flex items-center justify-center`;
+                // Inner dot for checked state handled in CSS/JS
+                if(isChecked) {
+                    marker.classList.add('border-blue-600', 'bg-blue-600');
+                    if(inputType === 'radio'){
+                        marker.innerHTML = '<div class="w-2 h-2 bg-white rounded-full"></div>';
+                    } else {
+                        marker.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                    }
+                } else {
+                    marker.classList.remove('border-blue-600', 'bg-blue-600');
+                    marker.innerHTML = '';
+                }
+
+                const textSpan = document.createElement('span');
+                textSpan.className = 'option-content option-text text-gray-800 pt-0.5';
+                
+                // Formatting for Benar/Salah or regular options
+                let prefix = "";
+                if(soal.tipe !== 'benar_salah') {
+                     prefix = `<span class="font-bold mr-2 text-gray-600">${String.fromCharCode(65 + index)}.</span> `;
+                }
+                textSpan.innerHTML = prefix + optText;
+
+                label.appendChild(input);
+                label.appendChild(marker);
+                label.appendChild(textSpan);
+                optionsContainer.appendChild(label);
+
+                // --- Review Mode Styling Logic ---
+                if (isReviewMode) {
+                    const isCorrectOption = (soal.tipe === 'pilgan_kompleks' && Array.isArray(soal.jawaban_benar)) 
+                        ? soal.jawaban_benar.includes(optText) 
+                        : soal.jawaban_benar === optText;
+
+                    if (isCorrectOption) {
+                        label.classList.add('correct-answer');
+                        // Add checkmark icon to text
+                        textSpan.innerHTML += ' <svg class="inline w-5 h-5 text-green-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>';
+                    } else if (isChecked && !isCorrectOption) {
+                        label.classList.add('wrong-answer');
+                        // Add X icon to text
+                        textSpan.innerHTML += ' <svg class="inline w-5 h-5 text-red-600 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>';
+                    }
+                }
+            });
+
+            // Handle Navigation Buttons
+            prevBtn.disabled = currentQuestionIndex === 0;
+            
+            // Handle Flag Checkbox State
+            if (isReviewMode) {
+                flagContainer.classList.add('hide');
+            } else {
+                flagContainer.classList.remove('hide');
+                flagCheckbox.checked = flaggedQuestions[currentQuestionIndex];
+            }
+
+            if (currentQuestionIndex === bankSoal.length - 1) {
+                nextBtn.innerHTML = isReviewMode ? "Akhiri Ulasan" : 'Selesaikan Evaluasi <span class="hidden md:inline ml-1 text-xs opacity-50">(→)</span>';
+                nextBtn.classList.replace('btn-primary', 'bg-green-600');
+                nextBtn.classList.add('text-white', 'hover:bg-green-700');
+            } else {
+                nextBtn.innerHTML = 'Selanjutnya <span class="hidden md:inline ml-1 text-xs opacity-50">(→)</span> <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>';
+                nextBtn.classList.replace('bg-green-600', 'btn-primary');
+                nextBtn.classList.remove('hover:bg-green-700');
+            }
+
+            // Handle Review Mode Explanation
+            if (isReviewMode) {
+                headerStatus.textContent = "Mode Pembahasan";
+                explanationContainer.classList.remove('hide');
+                explanationText.textContent = soal.penjelasan || "Tidak ada penjelasan tambahan untuk soal ini.";
+                
+                // Show header status indicating correct/wrong
+                const statusEl = document.createElement('div');
+                statusEl.className = `mt-4 p-3 rounded text-sm font-bold ${evaluationResults[currentQuestionIndex] === 'correct' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+                statusEl.textContent = evaluationResults[currentQuestionIndex] === 'correct' ? 'Jawaban Anda Benar' : 'Jawaban Anda Salah/Kurang Tepat';
+                optionsContainer.prepend(statusEl);
+
+            } else {
+                explanationContainer.classList.add('hide');
+            }
+            
+            updateQuestionGrid();
+            saveProgress();
+        }
+
+        function handleAnswerSelection(val, isChecked, tipe) {
+            if (tipe === 'pilgan_kompleks') {
+                let arr = userAnswers[currentQuestionIndex];
+                if (isChecked) {
+                    if (!arr.includes(val)) arr.push(val);
+                } else {
+                    arr = arr.filter(item => item !== val);
+                }
+                userAnswers[currentQuestionIndex] = arr;
+            } else {
+                // Radio buttons (pilihan_ganda or benar_salah)
+                userAnswers[currentQuestionIndex] = val;
+            }
+            updateQuestionGrid();
+            saveProgress();
+        }
+
+        // Visual helper to update styles without full reload
+        function updateOptionStyles() {
+            const containers = optionsContainer.querySelectorAll('.option-container');
+            containers.forEach(container => {
+                const input = container.querySelector('input');
+                const marker = container.querySelector('div');
+                
+                if (input.checked) {
+                    container.classList.add('selected');
+                    marker.classList.add('border-blue-600', 'bg-blue-600');
+                    if(input.type === 'radio'){
+                        marker.innerHTML = '<div class="w-2 h-2 bg-white rounded-full"></div>';
+                    } else {
+                        marker.innerHTML = '<svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>';
+                    }
+                } else {
+                    container.classList.remove('selected');
+                    marker.classList.remove('border-blue-600', 'bg-blue-600');
+                    marker.innerHTML = '';
+                }
+            });
+        }
+
+        // Ragu-Ragu Listener
+        flagCheckbox.addEventListener('change', (e) => {
+            flaggedQuestions[currentQuestionIndex] = e.target.checked;
+            updateQuestionGrid();
+            saveProgress();
+        });
+
+        // Keyboard Shortcuts
+        document.addEventListener('keydown', (e) => {
+            // Disable if not in quiz screen or if focusing on input
+            if (quizScreen.classList.contains('hide')) return;
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+
+            // Navigation
+            if (e.key === 'ArrowRight') {
+                if (currentQuestionIndex < bankSoal.length - 1 || isReviewMode) {
+                    nextBtn.click();
+                } else if (!isReviewMode) {
+                    nextBtn.click(); // Selesaikan
+                }
+            } else if (e.key === 'ArrowLeft') {
+                if (!prevBtn.disabled) prevBtn.click();
+            }
+
+            // Options selection (A, B, C, D, E) for non-review mode
+            if (!isReviewMode) {
+                const keyMap = {'a': 0, 'b': 1, 'c': 2, 'd': 3, 'e': 4};
+                const pressedKey = e.key.toLowerCase();
+                
+                if (pressedKey in keyMap) {
+                    const optIndex = keyMap[pressedKey];
+                    const soal = bankSoal[currentQuestionIndex];
+                    
+                    if (soal && soal.opsi && optIndex < soal.opsi.length) {
+                        // Find the corresponding radio/checkbox
+                        const optInput = document.getElementById(`opt-${optIndex}`);
+                        if (optInput) {
+                            if (soal.tipe === 'pilgan_kompleks') {
+                                optInput.checked = !optInput.checked; // Toggle for checkbox
+                                // Trigger change event manually
+                                const event = new Event('change', { bubbles: true });
+                                optInput.dispatchEvent(event);
+                            } else {
+                                optInput.checked = true;
+                                const event = new Event('change', { bubbles: true });
+                                optInput.dispatchEvent(event);
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            if (currentQuestionIndex < bankSoal.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                // Memanggil calculateScore berfungsi ganda dan membetulkan bug.
+                // Baik di mode pengerjaan maupun ulasan, ia memvalidasi nilai & menampilkan halaman penutup.
+                calculateScore();
+            }
+        });
+
+        prevBtn.addEventListener('click', () => {
+            if (currentQuestionIndex > 0) {
+                currentQuestionIndex--;
+                loadQuestion();
+            }
+        });
+
+        function calculateScore() {
+            clearInterval(timerInterval);
+            let correctCount = 0;
+            let wrongCount = 0;
+            let unansweredCount = 0;
+
+            bankSoal.forEach((soal, index) => {
+                const userAnswer = userAnswers[index];
+                const correctAnswer = soal.jawaban_benar;
+                let isCorrect = false;
+
+                if (soal.tipe === 'pilgan_kompleks') {
+                    // Cek kelengkapan array
+                    if (!userAnswer || userAnswer.length === 0) {
+                         unansweredCount++;
+                         evaluationResults[index] = 'unanswered';
+                         return; // Lanjut ke soal berikutnya
+                    }
+
+                    // Sort both arrays to compare regardless of order
+                    const sortedUser = [...userAnswer].sort();
+                    const sortedCorrect = Array.isArray(correctAnswer) ? [...correctAnswer].sort() : [correctAnswer];
+                    
+                    isCorrect = JSON.stringify(sortedUser) === JSON.stringify(sortedCorrect);
+                    
+                } else {
+                    if (userAnswer === null) {
+                         unansweredCount++;
+                         evaluationResults[index] = 'unanswered';
+                         return;
+                    }
+                    isCorrect = userAnswer === correctAnswer;
+                }
+
+                if (isCorrect) {
+                    correctCount++;
+                    evaluationResults[index] = 'correct';
+                } else {
+                    wrongCount++;
+                    evaluationResults[index] = 'wrong';
+                }
+            });
+
+            clearProgress(); // Selesai, hapus progress
+            renderResultScreen(correctCount, wrongCount, unansweredCount);
+        }
+
+        function renderResultScreen(correct, wrong, unanswered) {
+            quizScreen.classList.add('hide');
+            resultScreen.classList.remove('hide');
+            headerStatus.textContent = "Ringkasan Hasil Latihan";
+
+            const total = bankSoal.length;
+            const percentage = Math.round((correct / total) * 100);
+
+            // Update Text Stats
+            document.getElementById('stat-total').textContent = total;
+            document.getElementById('stat-correct').textContent = correct;
+            document.getElementById('stat-wrong').textContent = wrong;
+            document.getElementById('stat-unanswered').textContent = unanswered;
+            
+            document.getElementById('score-percentage').textContent = `${percentage}%`;
+            document.getElementById('score-fraction').textContent = `${correct} / ${total} Benar`;
+
+            // Animate SVG Circle
+            const circle = document.getElementById('score-circle-path');
+            const radius = circle.r.baseVal.value;
+            const circumference = radius * 2 * Math.PI; // approx 283
+            
+            circle.style.strokeDasharray = `${circumference} ${circumference}`;
+            const offset = circumference - (percentage / 100) * circumference;
+            
+            // Allow browser to render initial state before animating
+            setTimeout(() => {
+                circle.style.strokeDashoffset = offset;
+                
+                // Change color based on score
+                if(percentage >= 80) circle.setAttribute('stroke', '#16a34a'); // Green
+                else if (percentage >= 50) circle.setAttribute('stroke', '#eab308'); // Yellow
+                else circle.setAttribute('stroke', '#dc2626'); // Red
+            }, 100);
+        }
+
+        // Buttons on Result Screen
+        reviewBtn.addEventListener('click', () => {
+            isReviewMode = true;
+            resultScreen.classList.add('hide');
+            quizScreen.classList.remove('hide');
+            currentQuestionIndex = 0;
+            
+            navLegend.classList.add('hide');
+            navLegendReview.classList.remove('hide');
+            timerContainer.classList.add('hide');
+            
+            renderQuestionGrid();
+            loadQuestion();
+        });
+
+        restartBtn.addEventListener('click', () => {
+            initNewGame();
+            startGame(false);
+            
+            // Reset Progress circle for next time
+            document.getElementById('score-circle-path').style.strokeDashoffset = 283;
+            document.getElementById('score-circle-path').setAttribute('stroke', '#2c3e50');
+        });
+
+        newFileBtn.addEventListener('click', () => {
+            location.reload(); // Simplest way to completely reset state and UI
+        });
+
+        // --- Prompt Recommendation UI ---
+        const floatingBtn = document.getElementById('floating-btn');
+        const promptMenu = document.getElementById('prompt-menu');
+        const copyPromptBtn = document.getElementById('copy-prompt-btn');
+        const topicInput = document.getElementById('topic-input');
+        const promptText = document.getElementById('prompt-text');
+        const toast = document.getElementById('toast');
+
+        const basePromptText = promptText.value;
+
+        // Toggle Menu
+        floatingBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            promptMenu.classList.toggle('active');
+        });
+
+        // Close menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!promptMenu.contains(e.target) && !floatingBtn.contains(e.target)) {
+                promptMenu.classList.remove('active');
+            }
+        });
+        
+        // Prevent closing when clicking inside menu
+        promptMenu.addEventListener('click', (e) => {
+            e.stopPropagation();
+        });
+
+        // Update Prompt Text based on Topic
+        topicInput.addEventListener('input', (e) => {
+            const topic = e.target.value.trim() || "[TOPIK]";
+            promptText.value = basePromptText.replace(/\[TOPIK\]/g, topic);
+        });
+
+        // Copy to Clipboard
+        copyPromptBtn.addEventListener('click', async () => {
+            const textToCopy = promptText.value;
+            
+            // Try modern API first
+            try {
+                if (navigator.clipboard && navigator.clipboard.writeText) {
+                    await navigator.clipboard.writeText(textToCopy);
+                    showToast();
+                    return;
+                }
+            } catch (err) {
+                console.warn('Clipboard API failed, falling back to execCommand', err);
+            }
+
+            // Fallback for older browsers or iframes
+            try {
+                promptText.select();
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges(); // Deselect
+                showToast();
+            } catch (err) {
+                console.error('Copy fallback failed', err);
+                alert("Gagal menyalin teks. Silakan salin manual.");
+            }
+        });
+
+        function showToast() {
+            toast.classList.add('show');
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 2000);
+        }
+
+    </script>
+</body>
+</html>
